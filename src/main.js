@@ -4,8 +4,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 1. VISOR Y CONFIGURACIÓN INICIAL ---
   const viewer = new Cesium.Viewer('cesiumContainer', {
     terrain: Cesium.Terrain.fromWorldTerrain(),
-    animation: false, baseLayerPicker: false, geocoder: true, homeButton: false,
-    infoBox: false, sceneModePicker: false, selectionIndicator: false, timeline: false, navigationHelpButton: false,
+    animation: false,
+    baseLayerPicker: false,
+    geocoder: true,
+    homeButton: false,
+    infoBox: false,
+    sceneModePicker: false,
+    selectionIndicator: false,
+    timeline: false,
+    navigationHelpButton: false,
   });
   viewer.shadows = true;
   viewer.scene.globe.enableLighting = true;
@@ -24,12 +31,45 @@ document.addEventListener('DOMContentLoaded', () => {
       editableBuilding = null;
     });
 
-    const buildingEditorControls = ['building-width-slider', 'building-depth-slider', 'building-box-height-slider', 'building-rotation-slider', 'building-color-picker'];
-    buildingEditorControls.forEach(id => document.getElementById(id).addEventListener('input', updateBuildingFromEditor));
-    
+    const buildingEditorControls = [
+      'building-width-slider',
+      'building-depth-slider',
+      'building-box-height-slider',
+      'building-rotation-slider',
+      'building-color-picker',
+    ];
+    buildingEditorControls.forEach((id) =>
+      document.getElementById(id).addEventListener('input', updateBuildingFromEditor),
+    );
+
+    // **NUEVO: Listener para el campo de nombre del edificio**
+    document.getElementById('building-name-input').addEventListener('input', updateBuildingName);
+
+    // **NUEVO: Listener para el botón de eliminar edificio**
+    document.getElementById('delete-building-btn').addEventListener('click', deleteBuilding);
+
     document.getElementById('save-scene-btn').addEventListener('click', saveScene);
-    document.getElementById('load-scene-btn').addEventListener('click', () => document.getElementById('scene-upload-input').click());
+    document
+      .getElementById('load-scene-btn')
+      .addEventListener('click', () => document.getElementById('scene-upload-input').click());
     document.getElementById('scene-upload-input').addEventListener('change', loadScene);
+  }
+
+  // **NUEVA FUNCIÓN: Actualizar nombre del edificio**
+  function updateBuildingName() {
+    if (!editableBuilding) return;
+    const name = document.getElementById('building-name-input').value;
+    editableBuilding.name = name || 'Edificio sin nombre';
+  }
+
+  // **NUEVA FUNCIÓN: Eliminar edificio seleccionado**
+  function deleteBuilding() {
+    if (!editableBuilding) return;
+    viewer.entities.remove(editableBuilding);
+    editableBuilding = null;
+    viewer.selectedEntity = null;
+    document.getElementById('building-editor').classList.add('hidden');
+    document.getElementById('building-name-input').value = '';
   }
 
   // --- 3. LÓGICA DE EDICIÓN Y ESCENA ---
@@ -40,12 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const pos = entity.position.getValue(viewer.clock.currentTime);
         const orient = entity.orientation.getValue(viewer.clock.currentTime);
         const dimensions = entity.box.dimensions.getValue(viewer.clock.currentTime);
-        const color = entity.box.material.color.getValue(viewer.clock.currentTime).toCssColorString();
+        const color = entity.box.material.color
+          .getValue(viewer.clock.currentTime)
+          .toCssColorString();
         sceneData.push({
+          name: entity.name || 'Edificio sin nombre', // **NUEVO: Guardar nombre**
           position: { x: pos.x, y: pos.y, z: pos.z },
           orientation: { x: orient.x, y: orient.y, z: orient.z, w: orient.w },
           dimensions: { x: dimensions.x, y: dimensions.y, z: dimensions.z },
-          color: color
+          color: color,
         });
       }
     }
@@ -64,25 +107,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
       try {
         viewer.entities.removeAll();
         editableBuilding = null;
         const sceneData = JSON.parse(e.target.result);
-        sceneData.forEach(data => {
+        sceneData.forEach((data) => {
           editableBuilding = viewer.entities.add({
+            name: data.name || 'Edificio sin nombre', // **NUEVO: Cargar nombre**
             position: new Cesium.Cartesian3(data.position.x, data.position.y, data.position.z),
-            orientation: new Cesium.Quaternion(data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w),
+            orientation: new Cesium.Quaternion(
+              data.orientation.x,
+              data.orientation.y,
+              data.orientation.z,
+              data.orientation.w,
+            ),
             box: {
-              dimensions: new Cesium.Cartesian3(data.dimensions.x, data.dimensions.y, data.dimensions.z),
+              dimensions: new Cesium.Cartesian3(
+                data.dimensions.x,
+                data.dimensions.y,
+                data.dimensions.z,
+              ),
               material: Cesium.Color.fromCssColorString(data.color).withAlpha(0.8),
               shadows: Cesium.ShadowMode.ENABLED,
             },
           });
         });
       } catch (error) {
-        console.error("Error loading scene:", error);
-        alert("Error al cargar el archivo de escena.");
+        console.error('Error loading scene:', error);
+        alert('Error al cargar el archivo de escena.');
       }
     };
     reader.readAsText(file);
@@ -106,7 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const position = editableBuilding.position.getValue(viewer.clock.currentTime);
     const heading = Cesium.Math.toRadians(rotation);
-    const orientation = Cesium.Transforms.headingPitchRollQuaternion(position, new Cesium.HeadingPitchRoll(heading, 0, 0));
+    const orientation = Cesium.Transforms.headingPitchRollQuaternion(
+      position,
+      new Cesium.HeadingPitchRoll(heading, 0, 0),
+    );
     editableBuilding.orientation = orientation;
   }
 
@@ -123,10 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let rotation = 0;
     const orientation = editableBuilding.orientation.getValue(viewer.clock.currentTime);
     if (orientation) {
-        const hpr = Cesium.HeadingPitchRoll.fromQuaternion(orientation);
-        rotation = Cesium.Math.toDegrees(hpr.heading);
+      const hpr = Cesium.HeadingPitchRoll.fromQuaternion(orientation);
+      rotation = Cesium.Math.toDegrees(hpr.heading);
     }
     document.getElementById('building-rotation-slider').value = rotation;
+
+    // **NUEVO: Sincronizar nombre del edificio**
+    document.getElementById('building-name-input').value = editableBuilding.name || '';
 
     updateBuildingFromEditor();
   }
@@ -144,13 +203,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Cesium.defined(position)) {
           const boxHeight = parseFloat(document.getElementById('building-box-height-slider').value);
           const cartographic = Cesium.Cartographic.fromCartesian(position);
-          const centerPosition = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, cartographic.height + boxHeight / 2);
-          const orientation = Cesium.Transforms.headingPitchRollQuaternion(centerPosition, new Cesium.HeadingPitchRoll(0, 0, 0));
+          const centerPosition = Cesium.Cartesian3.fromRadians(
+            cartographic.longitude,
+            cartographic.latitude,
+            cartographic.height + boxHeight / 2,
+          );
+          const orientation = Cesium.Transforms.headingPitchRollQuaternion(
+            centerPosition,
+            new Cesium.HeadingPitchRoll(0, 0, 0),
+          );
 
           editableBuilding = viewer.entities.add({
+            name: 'Nuevo Edificio', // **NUEVO: Nombre por defecto**
             position: centerPosition,
             orientation: orientation,
-            box: { dimensions: new Cesium.Cartesian3(50, 50, boxHeight), material: Cesium.Color.WHITE.withAlpha(0.8), shadows: Cesium.ShadowMode.ENABLED },
+            box: {
+              dimensions: new Cesium.Cartesian3(50, 50, boxHeight),
+              material: Cesium.Color.WHITE.withAlpha(0.8),
+              shadows: Cesium.ShadowMode.ENABLED,
+            },
           });
 
           isPlacingBuilding = false;
@@ -161,7 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         const pickedObject = viewer.scene.pick(movement.position);
-        if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id) && Cesium.defined(pickedObject.id.box)) {
+        if (
+          Cesium.defined(pickedObject) &&
+          Cesium.defined(pickedObject.id) &&
+          Cesium.defined(pickedObject.id.box)
+        ) {
           editableBuilding = pickedObject.id;
           viewer.selectedEntity = editableBuilding;
           syncEditorWithBuilding();
@@ -174,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-    handler.setInputAction(function(click) {
+    handler.setInputAction(function (click) {
       const pickedObject = viewer.scene.pick(click.position);
       if (Cesium.defined(pickedObject) && Cesium.defined(pickedObject.id) && pickedObject.id.box) {
         isDragging = true;
@@ -185,14 +260,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, Cesium.ScreenSpaceEventType.LEFT_DOWN);
 
-    handler.setInputAction(function(movement) {
+    handler.setInputAction(function (movement) {
       if (isDragging && draggedEntity) {
         if (movement.shift) {
           const dy = initialMousePosition.y - movement.endPosition.y;
           const sensitivity = 1.0;
           const heightChange = dy * sensitivity;
           const up = Cesium.Cartesian3.normalize(initialPosition, new Cesium.Cartesian3());
-          const newPosition = Cesium.Cartesian3.add(initialPosition, Cesium.Cartesian3.multiplyByScalar(up, heightChange, new Cesium.Cartesian3()), new Cesium.Cartesian3());
+          const newPosition = Cesium.Cartesian3.add(
+            initialPosition,
+            Cesium.Cartesian3.multiplyByScalar(up, heightChange, new Cesium.Cartesian3()),
+            new Cesium.Cartesian3(),
+          );
           draggedEntity.position = newPosition;
         } else {
           draggedEntity.show = false;
@@ -201,7 +280,11 @@ document.addEventListener('DOMContentLoaded', () => {
           if (Cesium.defined(newPositionOnTerrain)) {
             const boxHeight = draggedEntity.box.dimensions.getValue(viewer.clock.currentTime).z;
             const cartographic = Cesium.Cartographic.fromCartesian(newPositionOnTerrain);
-            draggedEntity.position = Cesium.Cartesian3.fromRadians(cartographic.longitude, cartographic.latitude, cartographic.height + boxHeight / 2);
+            draggedEntity.position = Cesium.Cartesian3.fromRadians(
+              cartographic.longitude,
+              cartographic.latitude,
+              cartographic.height + boxHeight / 2,
+            );
             initialPosition = draggedEntity.position.getValue(viewer.clock.currentTime);
             initialMousePosition = Cesium.clone(movement.endPosition);
           }
@@ -209,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-    handler.setInputAction(function() {
+    handler.setInputAction(function () {
       if (isDragging) {
         isDragging = false;
         draggedEntity = null;
@@ -218,28 +301,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }, Cesium.ScreenSpaceEventType.LEFT_UP);
   }
 
+  // **NUEVA FUNCIÓN: Rastreo de coordenadas del mouse**
+  function setupCoordinateTracking() {
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+    const coordsDisplay = document.getElementById('coords-display');
+
+    handler.setInputAction(function (movement) {
+      // Intentar obtener la posición del terreno
+      const cartesian = viewer.camera.pickEllipsoid(
+        movement.endPosition,
+        viewer.scene.globe.ellipsoid,
+      );
+
+      if (cartesian) {
+        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        const longitude = Cesium.Math.toDegrees(cartographic.longitude).toFixed(6);
+        const latitude = Cesium.Math.toDegrees(cartographic.latitude).toFixed(6);
+        const height = cartographic.height.toFixed(2);
+
+        coordsDisplay.textContent = `Mouse: Lon ${longitude}°, Lat ${latitude}°, Alt ${height}m`;
+      } else {
+        coordsDisplay.textContent = 'Mouse: Fuera del globo';
+      }
+
+      // Mostrar también la posición de la cámara
+      const cameraPosition = viewer.camera.positionCartographic;
+      const camLon = Cesium.Math.toDegrees(cameraPosition.longitude).toFixed(6);
+      const camLat = Cesium.Math.toDegrees(cameraPosition.latitude).toFixed(6);
+      const camHeight = cameraPosition.height.toFixed(2);
+
+      coordsDisplay.textContent += ` | Cámara: Lon ${camLon}°, Lat ${camLat}°, Alt ${camHeight}m`;
+    }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+  }
+
   // --- 4. CONTROL DEL TIEMPO ---
   function setupTimeControls() {
     const timeSlider = document.getElementById('time-slider');
     const timeDisplay = document.getElementById('time-display');
     const animateTimeBtn = document.getElementById('animate-time-btn');
     const today = new Date();
-    const start = Cesium.JulianDate.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+    const start = Cesium.JulianDate.fromDate(
+      new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0),
+    );
     viewer.clock.startTime = start.clone();
     viewer.clock.stopTime = Cesium.JulianDate.addDays(start, 1, new Cesium.JulianDate());
     viewer.clock.currentTime = Cesium.JulianDate.addHours(start, 12, new Cesium.JulianDate());
     viewer.clock.multiplier = 4000;
     viewer.clock.shouldAnimate = false;
     viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
-    animateTimeBtn.addEventListener('click', () => { viewer.clock.shouldAnimate = !viewer.clock.shouldAnimate; });
-    timeSlider.addEventListener('input', (e) => { viewer.clock.currentTime = Cesium.JulianDate.addSeconds(start, parseInt(e.target.value, 10), new Cesium.JulianDate()); });
+    animateTimeBtn.addEventListener('click', () => {
+      viewer.clock.shouldAnimate = !viewer.clock.shouldAnimate;
+    });
+    timeSlider.addEventListener('input', (e) => {
+      viewer.clock.currentTime = Cesium.JulianDate.addSeconds(
+        start,
+        parseInt(e.target.value, 10),
+        new Cesium.JulianDate(),
+      );
+    });
     viewer.clock.onTick.addEventListener((clock) => {
       let secondsIntoDay = Cesium.JulianDate.secondsDifference(clock.currentTime, start);
-      if (secondsIntoDay < 0) { secondsIntoDay += 86400; }
+      if (secondsIntoDay < 0) {
+        secondsIntoDay += 86400;
+      }
       timeSlider.value = secondsIntoDay;
       const hours = Math.floor(secondsIntoDay / 3600) % 24;
       const minutes = Math.floor((secondsIntoDay % 3600) / 60);
-      timeDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      timeDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(
+        2,
+        '0',
+      )}`;
     });
   }
 
@@ -253,14 +384,15 @@ document.addEventListener('DOMContentLoaded', () => {
       initializeUI();
       setupPickingAndDragging();
       setupTimeControls();
+      setupCoordinateTracking(); // **NUEVO: Inicializar rastreo de coordenadas**
 
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(-74.0445, 40.68, 2500),
         orientation: { heading: Cesium.Math.toRadians(0.0), pitch: Cesium.Math.toRadians(-35.0) },
       });
     } catch (error) {
-      console.error("Error al configurar la escena inicial:", error);
-      alert("No se pudo cargar la escena inicial.");
+      console.error('Error al configurar la escena inicial:', error);
+      alert('No se pudo cargar la escena inicial.');
     }
   }
 

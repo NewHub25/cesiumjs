@@ -1,102 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visualizador Urbano 3D</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.126/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-  <link rel="stylesheet" href="src/style.css">
-  <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml">
-</head>
-<body>
-  <div id="control-panel" class="absolute top-4 left-4 z-10 bg-gray-800 bg-opacity-80 text-white rounded-lg shadow-md p-4">
-    <h2 class="text-lg font-bold mb-2">Panel de Herramientas</h2>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visualizador Urbano 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cesium.com/downloads/cesiumjs/releases/1.126/Build/Cesium/Widgets/widgets.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="src/style.css" />
+    <link rel="icon" href="assets/images/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div
+      id="control-panel"
+      class="absolute top-4 left-4 z-10 bg-gray-800 bg-opacity-80 text-white rounded-lg shadow-md p-4 overflow-y-auto -h-[50vh] max-h-[80vh] max-w-[40vw] md:max-w-[25vw]"
+    >
+      <h2 class="text-lg font-bold mb-2">Panel de Herramientas</h2>
 
-    <!-- Shadow Analysis -->
-    <div class="mt-4 pt-4 border-t border-gray-600">
-      <label for="shadows-toggle" class="flex items-center justify-between cursor-pointer">
-        <span class="text-sm font-medium">Análisis de Sombras</span>
-        <div class="relative">
-          <input type="checkbox" id="shadows-toggle" class="sr-only peer">
-          <div class="w-10 h-6 bg-gray-600 rounded-full peer-checked:bg-blue-500"></div>
-          <div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-full"></div>
+      <!-- Shadow Analysis -->
+      <div class="mt-4 pt-4 border-t border-gray-600">
+        <label for="shadows-toggle" class="flex items-center justify-between cursor-pointer">
+          <span class="text-sm font-medium">Análisis de Sombras</span>
+          <div class="relative">
+            <input type="checkbox" id="shadows-toggle" class="sr-only peer" />
+            <div class="w-10 h-6 bg-gray-600 rounded-full peer-checked:bg-blue-500"></div>
+            <div
+              class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-full"
+            ></div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Scene Save/Load -->
+      <div class="mt-4 pt-4 border-t border-gray-600">
+        <button
+          id="save-scene-btn"
+          class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mb-2"
+        >
+          Guardar Escena
+        </button>
+        <button
+          id="load-scene-btn"
+          class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+        >
+          Cargar Escena
+        </button>
+        <input type="file" id="scene-upload-input" accept=".json" class="hidden" />
+      </div>
+      <!-- Building Tools -->
+      <div class="mt-4 pt-4 border-t border-gray-600">
+        <h3 class="text-md font-semibold mb-2">Herramientas de Edificios</h3>
+        <button
+          id="add-building-btn"
+          class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Activar modo Añadir Edificio
+        </button>
+        <input
+          type="text"
+          id="building-name-input"
+          placeholder="Nombre del Edificio"
+          class="w-full mt-2 p-2 bg-gray-700 border border-gray-500 rounded text-white"
+        />
+        <div id="building-editor" class="hidden mt-4 space-y-2">
+          <!-- Dimensions -->
+          <div class="pt-2 border-t border-gray-700">
+            <h4 class="text-sm font-semibold">Dimensiones</h4>
+            <div class="mb-2">
+              <label for="building-width-slider" class="block text-sm font-medium">
+                Ancho (m):
+                <span id="building-width-value">50</span>
+              </label>
+              <input
+                type="range"
+                id="building-width-slider"
+                min="1"
+                max="200"
+                step="1"
+                value="50"
+                class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+            <div class="mb-2">
+              <label for="building-depth-slider" class="block text-sm font-medium">
+                Profundidad (m):
+                <span id="building-depth-value">50</span>
+              </label>
+              <input
+                type="range"
+                id="building-depth-slider"
+                min="1"
+                max="200"
+                step="1"
+                value="50"
+                class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+            <div class="mb-2">
+              <label for="building-box-height-slider" class="block text-sm font-medium">
+                Altura Edificio (m):
+                <span id="building-box-height-value">150</span>
+              </label>
+              <input
+                type="range"
+                id="building-box-height-slider"
+                min="1"
+                max="500"
+                step="1"
+                value="150"
+                class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <!-- Rotation -->
+          <div class="pt-2 border-t border-gray-700">
+            <h4 class="text-sm font-semibold">Rotación</h4>
+            <div class="mb-2">
+              <label for="building-rotation-slider" class="block text-sm font-medium">
+                Rotación (°):
+                <span id="building-rotation-value">0</span>
+              </label>
+              <input
+                type="range"
+                id="building-rotation-slider"
+                min="0"
+                max="360"
+                step="1"
+                value="0"
+                class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <!-- Appearance -->
+          <div class="pt-2 border-t border-gray-700">
+            <h4 class="text-sm font-semibold">Apariencia</h4>
+            <label for="building-color-picker" class="block text-sm font-medium">
+              Color del Edificio
+            </label>
+            <input
+              type="color"
+              id="building-color-picker"
+              value="#000000"
+              class="w-full h-8 p-1 bg-gray-600 border border-gray-500 rounded cursor-pointer"
+            />
+          </div>
+          <div>
+            <button
+              id="delete-building-btn"
+              class="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4"
+            >
+              Eliminar Edificio
+            </button>
+          </div>
         </div>
-      </label>
-    </div>
 
-    <!-- Scene Save/Load -->
-    <div class="mt-4 pt-4 border-t border-gray-600">
-      <button id="save-scene-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mb-2">
-        Guardar Escena
-      </button>
-      <button id="load-scene-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
-        Cargar Escena
-      </button>
-      <input type="file" id="scene-upload-input" accept=".json" class="hidden">
-    </div>
-
-    <!-- Building Tools -->
-    <div class="mt-4 pt-4 border-t border-gray-600">
-      <h3 class="text-md font-semibold mb-2">Herramientas de Edificios</h3>
-      <button id="add-building-btn" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-        Activar modo Añadir Edificio
-      </button>
-      
-      <div id="building-editor" class="hidden mt-4 space-y-2">
-        
-
-
-        <!-- Dimensions -->
-        <div class="pt-2 border-t border-gray-700">
-          <h4 class="text-sm font-semibold">Dimensiones</h4>
+        <!-- Time Control -->
+        <div class="mt-4 pt-4 border-t border-gray-600">
+          <h3 class="text-md font-semibold mb-2">Control del Tiempo</h3>
           <div class="mb-2">
-            <label for="building-width-slider" class="block text-sm font-medium">Ancho (m): <span id="building-width-value">50</span></label>
-            <input type="range" id="building-width-slider" min="1" max="200" step="1" value="50" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+            <label for="time-slider" class="block text-sm font-medium">
+              Hora del Día:
+              <span id="time-display">12:00</span>
+            </label>
+            <input
+              type="range"
+              id="time-slider"
+              min="0"
+              max="86400"
+              step="60"
+              value="43200"
+              class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            />
           </div>
-          <div class="mb-2">
-            <label for="building-depth-slider" class="block text-sm font-medium">Profundidad (m): <span id="building-depth-value">50</span></label>
-            <input type="range" id="building-depth-slider" min="1" max="200" step="1" value="50" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-          </div>
-          <div class="mb-2">
-            <label for="building-box-height-slider" class="block text-sm font-medium">Altura Edificio (m): <span id="building-box-height-value">150</span></label>
-            <input type="range" id="building-box-height-slider" min="1" max="500" step="1" value="150" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-          </div>
-        </div>
-
-        <!-- Rotation -->
-        <div class="pt-2 border-t border-gray-700">
-          <h4 class="text-sm font-semibold">Rotación</h4>
-          <div class="mb-2">
-            <label for="building-rotation-slider" class="block text-sm font-medium">Rotación (°): <span id="building-rotation-value">0</span></label>
-            <input type="range" id="building-rotation-slider" min="0" max="360" step="1" value="0" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-          </div>
-        </div>
-
-        <!-- Appearance -->
-        <div class="pt-2 border-t border-gray-700">
-          <h4 class="text-sm font-semibold">Apariencia</h4>
-          <label for="building-color-picker" class="block text-sm font-medium">Color del Edificio</label>
-          <input type="color" id="building-color-picker" value="#ffffff" class="w-full h-8 p-1 bg-gray-600 border border-gray-500 rounded cursor-pointer">
+          <button
+            id="animate-time-btn"
+            class="w-full bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mt-2"
+          >
+            Animar Día/Noche
+          </button>
         </div>
       </div>
     </div>
-
-    <!-- Time Control -->
-    <div class="mt-4 pt-4 border-t border-gray-600">
-      <h3 class="text-md font-semibold mb-2">Control del Tiempo</h3>
-      <div class="mb-2">
-        <label for="time-slider" class="block text-sm font-medium">Hora del Día: <span id="time-display">12:00</span></label>
-        <input type="range" id="time-slider" min="0" max="86400" step="60" value="43200" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+    <div id="cesiumContainer"></div>
+    <footer class="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-2 h-[4rem]">
+      <div class="container mx-auto text-center relative">
+        <span id="coords-display"></span>
+        <a
+          href="https://with-trae-nasa.vercel.app/en"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="absolute top-0 right-0 bg-blue-500 bg-opacity-90 text-white rounded-lg px-4 py-2 shadow-lg hover:bg-blue-600 hover:shadow-xl transform hover:scale-105 flex items-center gap-2 group"
+        >
+          <span class="text-sm font-semibold">Ver Proyecto NASA</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+            />
+          </svg>
+        </a>
       </div>
-      <button id="animate-time-btn" class="w-full bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded mt-2">
-        Animar Día/Noche
-      </button>
-    </div>
-  </div>
-  <div id="cesiumContainer"></div>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.126/Build/Cesium/Cesium.js"></script>
-  <script src="config.js"></script>
-  <script src="src/main.js"></script>
-</body>
+    </footer>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.126/Build/Cesium/Cesium.js"></script>
+    <script src="config.js"></script>
+    <script src="src/main.js"></script>
+  </body>
 </html>
