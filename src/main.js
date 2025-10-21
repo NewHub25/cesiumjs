@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
-  // --- 1. VISOR Y CONFIGURACIÓN INICIAL ---
   const viewer = new Cesium.Viewer('cesiumContainer', {
     terrain: Cesium.Terrain.fromWorldTerrain(),
     animation: false,
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let editableBuilding = null;
   let isPlacingBuilding = false;
 
-  // --- 2. LÓGICA DE LA INTERFAZ DE USUARIO ---
   function initializeUI() {
     document.getElementById('add-building-btn').addEventListener('click', () => {
       isPlacingBuilding = true;
@@ -42,10 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById(id).addEventListener('input', updateBuildingFromEditor),
     );
 
-    // **NUEVO: Listener para el campo de nombre del edificio**
     document.getElementById('building-name-input').addEventListener('input', updateBuildingName);
 
-    // **NUEVO: Listener para el botón de eliminar edificio**
     document.getElementById('delete-building-btn').addEventListener('click', deleteBuilding);
 
     document.getElementById('save-scene-btn').addEventListener('click', saveScene);
@@ -55,14 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('scene-upload-input').addEventListener('change', loadScene);
   }
 
-  // **NUEVA FUNCIÓN: Actualizar nombre del edificio**
   function updateBuildingName() {
     if (!editableBuilding) return;
     const name = document.getElementById('building-name-input').value;
     editableBuilding.name = name || 'Edificio sin nombre';
   }
 
-  // **NUEVA FUNCIÓN: Eliminar edificio seleccionado**
   function deleteBuilding() {
     if (!editableBuilding) return;
     viewer.entities.remove(editableBuilding);
@@ -72,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('building-name-input').value = '';
   }
 
-  // --- 3. LÓGICA DE EDICIÓN Y ESCENA ---
   function saveScene() {
     const sceneData = [];
     for (const entity of viewer.entities.values) {
@@ -184,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('building-rotation-slider').value = rotation;
 
-    // **NUEVO: Sincronizar nombre del edificio**
     document.getElementById('building-name-input').value = editableBuilding.name || '';
 
     updateBuildingFromEditor();
@@ -214,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
           );
 
           editableBuilding = viewer.entities.add({
-            name: 'Nuevo Edificio', // **NUEVO: Nombre por defecto**
+            name: 'New Building',
             position: centerPosition,
             orientation: orientation,
             box: {
@@ -301,7 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, Cesium.ScreenSpaceEventType.LEFT_UP);
   }
 
-  // **NUEVA FUNCIÓN: Rastreo de coordenadas del mouse**
   function setupCoordinateTracking() {
     const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     const coordsDisplay = document.getElementById('coords-display');
@@ -324,7 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
         coordsDisplay.textContent = 'Mouse: Fuera del globo';
       }
 
-      // Mostrar también la posición de la cámara
       const cameraPosition = viewer.camera.positionCartographic;
       const camLon = Cesium.Math.toDegrees(cameraPosition.longitude).toFixed(6);
       const camLat = Cesium.Math.toDegrees(cameraPosition.latitude).toFixed(6);
@@ -334,7 +324,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
   }
 
-  // --- 4. CONTROL DEL TIEMPO ---
   function setupTimeControls() {
     const timeSlider = document.getElementById('time-slider');
     const timeDisplay = document.getElementById('time-display');
@@ -374,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- 5. INICIALIZACIÓN DE LA ESCENA PRINCIPAL ---
   async function setupScene() {
     try {
       const osmBuildings = await Cesium.createOsmBuildingsAsync();
@@ -384,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
       initializeUI();
       setupPickingAndDragging();
       setupTimeControls();
-      setupCoordinateTracking(); // **NUEVO: Inicializar rastreo de coordenadas**
+      setupCoordinateTracking();
 
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(-74.0445, 40.68, 2500),
